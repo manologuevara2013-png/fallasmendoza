@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -302,7 +301,7 @@
     .oculto-por-denuncias {
       opacity: 0.5;
     }
-  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div id="barraAdmin" class="barra-admin" style="display: none;">
@@ -463,16 +462,18 @@
   </main>
 
   <button class="enlace-admin" onclick="entrarAdmin()">Acceso administrador</button>
-/* ---------- Conexión con Supabase ---------- */
+
+  <script>
+    /* ---------- Conexión con Supabase ---------- */
     // Estas dos líneas conectan la app con tu base de datos en la nube.
     // La URL y la clave son PÚBLICAS: pueden verse desde el navegador,
     // por eso Supabase tiene las políticas RLS que ya configuramos —
     // ellas son las que controlan qué se puede leer y escribir.
     var SUPABASE_URL = "https://yvotjekqbddmtfdhfshp.supabase.co";
-    var SUPABASE_KEY = "sb_publishable_kgFE8bb3yDrwq-WVHWD74w_pWO_YmYw";
-   
-  <script>
+    var SUPABASE_KEY = "sb_publishable_52uhqWH7oAVB1TGcah4Ynw_JXO-m1_P";
+
     var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     var fotosActuales = [];
     var MAX_FOTOS = 4;
     var UMBRAL_AMARILLO = 10;
