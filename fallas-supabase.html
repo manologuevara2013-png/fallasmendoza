@@ -471,9 +471,36 @@
     // por eso Supabase tiene las políticas RLS que ya configuramos —
     // ellas son las que controlan qué se puede leer y escribir.
     var SUPABASE_URL = "https://yvotjekqbddmtfdhfshp.supabase.co";
-    var SUPABASE_KEY = "sb_publishable_52uhqWH7oAVB1TGcah4Ynw_JXO-m1_P";
-
+    var SUPABASE_KEY = "sb_publishable_0QR2rDbX9KyYS_Irh20sqQ__4BKwp5y";
     var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ETAPA 1: Envía un reporte a Supabase (además de guardarlo en localStorage).
+    // Es una función auxiliar - no rompe nada si Supabase falla, solo lo avisa.
+    async function enviarASupabase(reporte) {
+      try {
+        var { data, error } = await supabaseClient
+          .from("reportes")
+          .insert([{
+            categoria: reporte.categoria,
+            departamento: reporte.departamento,
+            ubicacion: reporte.ubicacion,
+            descripcion: reporte.descripcion,
+            contador: reporte.contador || 1,
+            autor: reporte.autor,
+            gps: reporte.gps,
+            oculto: false
+          }]);
+        if (error) {
+          console.log("Supabase INSERT error:", error);
+          return false;
+        }
+        console.log("Reporte enviado a Supabase:", data);
+        return true;
+      } catch (e) {
+        console.log("Error de conexión con Supabase:", e);
+        return false;
+      }
+    }
 
     var fotosActuales = [];
     var MAX_FOTOS = 4;
@@ -1104,6 +1131,8 @@
       marcarComoVotado(nuevoId);
 
       if (guardar(reportes)) {
+        // ETAPA 1: además de guardar local, enviamos a Supabase
+        enviarASupabase(reportes[reportes.length - 1]);
         mostrarHistorial();
         limpiarFormulario();
       }
