@@ -52,10 +52,7 @@
             font-size: 13px;
         }
 
-        .panel-header-actions {
-            display: flex;
-            gap: 10px;
-        }
+        .panel-header-actions { display: flex; gap: 10px; }
 
         h1 {
             color: #2c3e50;
@@ -91,10 +88,7 @@
             background: white;
         }
 
-        input:focus, select:focus {
-            outline: none;
-            border-color: #3498db;
-        }
+        input:focus, select:focus { outline: none; border-color: #3498db; }
 
         button {
             padding: 10px 18px;
@@ -241,12 +235,15 @@
             max-width: 100%;
             border-radius: 8px;
             border: 1px solid #ddd;
+            margin-bottom: 8px;
         }
 
         .detalle-info {
             font-size: 14px;
             line-height: 1.6;
         }
+
+        .detalle-info p { margin-bottom: 6px; }
 
         .detalle-info strong {
             color: #34495e;
@@ -262,6 +259,38 @@
             margin-top: 10px;
             white-space: pre-wrap;
         }
+
+        .lista-aportes {
+            background: white;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border-left: 3px solid #27ae60;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+
+        .lista-aportes .aporte-item {
+            padding: 6px 0;
+            border-bottom: 1px dashed #ecf0f1;
+        }
+
+        .lista-aportes .aporte-item:last-child { border-bottom: none; }
+
+        .aporte-autor {
+            font-weight: 600;
+            color: #27ae60;
+            font-size: 12px;
+        }
+
+        .map-link {
+            display: inline-block;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .map-link:hover { text-decoration: underline; }
 
         .loading, .empty {
             text-align: center;
@@ -280,10 +309,7 @@
             border: none;
         }
 
-        .cambiar-municipio-btn:hover {
-            background: transparent;
-            color: #2980b9;
-        }
+        .cambiar-municipio-btn:hover { background: transparent; color: #2980b9; }
 
         @media (max-width: 768px) {
             .detalle-grid { grid-template-columns: 1fr; }
@@ -293,7 +319,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- Pantalla de LOGIN -->
+        <!-- LOGIN -->
         <div id="login-screen" class="login-container">
             <h1>🏛️ Panel de Gestión</h1>
             <p class="subtitle">Acceso para funcionarios municipales</p>
@@ -310,7 +336,7 @@
             <a href="index.html" class="footer-link">← Volver a la app pública</a>
         </div>
 
-        <!-- Pantalla de SELECTOR DE MUNICIPIO (solo superadmin) -->
+        <!-- SELECTOR DE MUNICIPIO (superadmin) -->
         <div id="selector-screen" class="selector-container" style="display:none;">
             <h1>🏛️ Panel Superadmin</h1>
             <p class="subtitle">¿Qué municipio querés gestionar hoy?</p>
@@ -324,7 +350,7 @@
             <button class="full-width secondary" style="margin-top:10px;" onclick="logout()">Cerrar sesión</button>
         </div>
 
-        <!-- Pantalla DASHBOARD -->
+        <!-- DASHBOARD -->
         <div id="dashboard-screen" style="display:none;">
             <div class="panel-header">
                 <div class="panel-header-info">
@@ -362,10 +388,9 @@
 
         var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         var usuarioActual = null;
-        var municipioSeleccionado = null; // Para superadmin
+        var municipioSeleccionado = null;
         var filasExpandidas = {};
 
-        // Al cargar la página, verificar si ya hay sesión activa
         window.addEventListener('load', async function() {
             var { data: { session } } = await supabase.auth.getSession();
             if (session) {
@@ -404,7 +429,6 @@
         }
 
         async function procesarLogin(user) {
-            // Buscar datos del usuario en usuarios_gestion
             var { data: perfil, error } = await supabase
                 .from('usuarios_gestion')
                 .select('nombre, rol, area_id, municipio_id, areas(nombre), municipios(nombre)')
@@ -428,11 +452,9 @@
                 municipio_nombre: perfil.municipios ? perfil.municipios.nombre : null
             };
 
-            // Si es superadmin, mostrar selector de municipio
             if (usuarioActual.rol === 'superadmin') {
                 await mostrarSelectorMunicipio();
             } else {
-                // admin u operador: ir directo al dashboard con su municipio
                 municipioSeleccionado = {
                     id: usuarioActual.municipio_id,
                     nombre: usuarioActual.municipio_nombre
@@ -491,7 +513,6 @@
             document.getElementById('selector-screen').style.display = 'none';
             document.getElementById('dashboard-screen').style.display = 'block';
 
-            // Llenar header
             document.getElementById('user-nombre').textContent = usuarioActual.nombre;
 
             var rolBadge = document.getElementById('user-rol-badge');
@@ -516,13 +537,12 @@
             contenedor.innerHTML = '<div class="loading">Cargando reclamos...</div>';
             filasExpandidas = {};
 
-            // Construir query con filtro de municipio según rol
             var query = supabase
                 .from('reportes')
                 .select('*, areas(nombre), municipios(nombre)')
+                .eq('oculto', false)
                 .order('id', { ascending: false });
 
-            // Filtrar por municipio (si no es "Todos")
             if (municipioSeleccionado.id !== null) {
                 query = query.eq('municipio_id', municipioSeleccionado.id);
             }
@@ -557,15 +577,17 @@
             html += '<th>Estado</th>';
             html += '<th>Área</th>';
             html += '<th>Votos</th>';
+            html += '<th>Aportes</th>';
             html += '<th>Acción</th>';
             html += '</tr></thead><tbody>';
 
             reclamos.forEach(function(r) {
-                var fecha = formatearFecha(r.fecha || r.created_at);
+                var fecha = formatearFecha(r.created_at);
                 var estado = r.estado || 'nuevo';
                 var area = (r.areas && r.areas.nombre) ? r.areas.nombre : '—';
                 var municipio = (r.municipios && r.municipios.nombre) ? r.municipios.nombre : '—';
-                var votos = r.votos || 0;
+                var votos = r.contador || 0;
+                var cantAportes = contarAportes(r.aportes);
 
                 html += '<tr class="reclamo-row" onclick="toggleDetalle(' + r.id + ')">';
                 html += '<td>#' + r.id + '</td>';
@@ -577,10 +599,11 @@
                 html += '<td><span class="badge estado-' + estado + '">' + estado.replace('_', ' ') + '</span></td>';
                 html += '<td>' + escaparHTML(area) + '</td>';
                 html += '<td>' + votos + '</td>';
+                html += '<td>' + cantAportes + '</td>';
                 html += '<td><button class="btn-ver" onclick="event.stopPropagation(); toggleDetalle(' + r.id + ')">Ver detalle</button></td>';
                 html += '</tr>';
 
-                var colspan = esSuperadminViendoTodos ? 8 : 7;
+                var colspan = esSuperadminViendoTodos ? 9 : 8;
                 html += '<tr class="detalle-row" id="detalle-' + r.id + '" style="display:none;"><td colspan="' + colspan + '">';
                 html += renderDetalle(r);
                 html += '</td></tr>';
@@ -593,33 +616,120 @@
         function renderDetalle(r) {
             var html = '<div class="detalle-grid">';
 
+            // Columna izquierda: foto(s)
             html += '<div class="detalle-foto">';
-            if (r.fotos && r.fotos.length > 0) {
-                html += '<img src="' + r.fotos[0] + '" alt="Foto del reclamo">';
+            var fotos = r.fotos;
+            if (fotos && Array.isArray(fotos) && fotos.length > 0) {
+                fotos.forEach(function(f) {
+                    var url = (typeof f === 'string') ? f : (f.url || '');
+                    if (url) {
+                        html += '<img src="' + escaparHTML(url) + '" alt="Foto del reclamo">';
+                    }
+                });
             } else {
                 html += '<div style="padding:40px; background:#ecf0f1; border-radius:8px; text-align:center; color:#95a5a6;">Sin foto</div>';
             }
             html += '</div>';
 
+            // Columna derecha: datos
             html += '<div class="detalle-info">';
-            html += '<p><strong>Dirección:</strong> ' + escaparHTML(r.direccion || '—') + '</p>';
+
+            // Ubicación (en vez de dirección)
+            html += '<p><strong>Ubicación:</strong> ' + escaparHTML(r.ubicacion || '—') + '</p>';
             html += '<p><strong>Departamento:</strong> ' + escaparHTML(r.departamento || '—') + '</p>';
-            html += '<p><strong>Coordenadas:</strong> ' + (r.latitud || '—') + ', ' + (r.longitud || '—') + '</p>';
-            html += '<p><strong>Vecino:</strong> ' + escaparHTML(r.nombre || 'Anónimo') + '</p>';
-            if (r.contacto) {
-                html += '<p><strong>Contacto:</strong> ' + escaparHTML(r.contacto) + '</p>';
-            }
-            html += '<p><strong>Aportes:</strong> ' + (r.aportes || 0) + ' · <strong>Denuncias:</strong> ' + (r.denuncias || 0) + '</p>';
-            html += '<p><strong>Descripción:</strong></p>';
+
+            // GPS (lee el JSON)
+            var gpsTexto = formatearGPS(r.gps);
+            html += '<p><strong>Coordenadas:</strong> ' + gpsTexto + '</p>';
+
+            // Autor (JSON): nombre + DNI, o Anónimo
+            var autorTexto = formatearAutor(r.autor);
+            html += '<p><strong>Vecino:</strong> ' + autorTexto + '</p>';
+
+            // Votos y denuncias
+            html += '<p><strong>Votos (+1):</strong> ' + (r.contador || 0) + '</p>';
+            html += '<p><strong>Denuncias:</strong> ' + (r.denuncias || 0) + '</p>';
+
+            // Descripción
+            html += '<p style="margin-top:10px;"><strong>Descripción:</strong></p>';
             html += '<div class="detalle-descripcion">' + escaparHTML(r.descripcion || '(sin descripción)') + '</div>';
+
+            // Aportes (lista completa — decisión B del usuario)
+            var aportes = r.aportes;
+            if (aportes && Array.isArray(aportes) && aportes.length > 0) {
+                html += '<p style="margin-top:10px;"><strong>Aportes (' + aportes.length + '):</strong></p>';
+                html += '<div class="lista-aportes">';
+                aportes.forEach(function(ap) {
+                    html += '<div class="aporte-item">';
+                    var autorAporte = formatearAutor(ap.autor) || 'Anónimo';
+                    html += '<div class="aporte-autor">' + autorAporte + '</div>';
+                    html += '<div>' + escaparHTML(ap.texto || ap.descripcion || ap.aporte || JSON.stringify(ap)) + '</div>';
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+
+            // Observaciones internas
             if (r.observaciones_internas) {
                 html += '<p style="margin-top:10px;"><strong>Obs. internas:</strong></p>';
                 html += '<div class="detalle-descripcion" style="border-left-color:#e67e22;">' + escaparHTML(r.observaciones_internas) + '</div>';
             }
-            html += '</div>';
 
             html += '</div>';
+            html += '</div>';
             return html;
+        }
+
+        // --- Helpers de formateo ---
+
+        function formatearGPS(gps) {
+            if (!gps) return '—';
+            try {
+                // Puede venir como objeto o como string JSON
+                var obj = (typeof gps === 'string') ? JSON.parse(gps) : gps;
+                var lat = obj.lat || obj.latitud || obj.latitude;
+                var lng = obj.lng || obj.lon || obj.longitud || obj.longitude;
+                if (lat && lng) {
+                    var latStr = Number(lat).toFixed(5);
+                    var lngStr = Number(lng).toFixed(5);
+                    var mapUrl = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+                    return latStr + ', ' + lngStr + ' <a href="' + mapUrl + '" target="_blank" class="map-link">📍 ver en mapa</a>';
+                }
+                return '—';
+            } catch (e) {
+                return '—';
+            }
+        }
+
+        function formatearAutor(autor) {
+            if (!autor) return 'Anónimo';
+            try {
+                var obj = (typeof autor === 'string') ? JSON.parse(autor) : autor;
+                var nombre = obj.nombre || obj.nombre_apellido || '';
+                var dni = obj.dni || obj.documento || '';
+                var contacto = obj.contacto || obj.telefono || obj.email || '';
+
+                if (!nombre && !dni) return 'Anónimo';
+
+                var partes = [];
+                if (nombre) partes.push(escaparHTML(nombre));
+                if (dni) partes.push('DNI ' + escaparHTML(dni));
+                if (contacto) partes.push(escaparHTML(contacto));
+                return partes.join(' · ');
+            } catch (e) {
+                return 'Anónimo';
+            }
+        }
+
+        function contarAportes(aportes) {
+            if (!aportes) return 0;
+            try {
+                var arr = (typeof aportes === 'string') ? JSON.parse(aportes) : aportes;
+                if (Array.isArray(arr)) return arr.length;
+                return 0;
+            } catch (e) {
+                return 0;
+            }
         }
 
         function toggleDetalle(id) {
